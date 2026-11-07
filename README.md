@@ -1,60 +1,47 @@
-# Arduino Uno · OLED Saat ve Animasyon (RTC'li)
+# Arduino Uno · OLED Clock and Animation (with RTC)
 
-Arduino Uno, 4 pinli I2C OLED ekran (SSD1306, 128x64) ve RTC modülü (DS3231) ile yapılmış bir masa saati. Ekranın solunda dönen bir dişli animasyonu, sağında saat, gün ve tarih gösterilir. Animasyon istersen kendi çizdiğin kareli (bitmap) animasyonla değiştirilebilir.
+A desktop clock built using an Arduino Uno, a 4-pin I2C OLED display (SSD1306, 128x64), and an RTC module (DS3231). A rotating gear animation is displayed on the left side of the screen, while the time, day, and date are displayed on the right. If desired, the animation can be replaced with a custom frame-based (bitmap) animation.
 
-## Malzemeler
+## Components
 
-| Adet | Malzeme |
-|------|---------|
+| Quantity | Component |
+|---|---|
 | 1 | Arduino Uno |
-| 1 | 0.96" OLED ekran, 4 pinli I2C, SSD1306, 128x64 |
-| 1 | RTC modülü DS3231 (DS1307 de olur, aşağıda notu var) |
-| 1 | CR2032 pil (RTC modülü için, saatin kapalıyken de çalışması için) |
-| 4-8 | Jumper kablo (breadboard kullanılırsa) |
+| 1 | 0.96" OLED display, 4-pin I2C, SSD1306, 128x64 |
+| 1 | RTC module DS3231 (DS1307 is also supported; see note below) |
+| 1 | CR2032 battery (for the RTC module to keep time when the power is off) |
+| 4-8 | Jumper wires (if using a breadboard) |
 
-## Bağlantılar
+## Connections
 
-OLED ve RTC aynı I2C hattını paylaşır. İkisinin SDA ve SCL uçları Arduino'da aynı pinlere bağlanır. Cihazların adresleri farklı olduğu için çakışma olmaz (OLED `0x3C`, DS3231 `0x68`).
+The OLED and RTC share the same I2C bus. Their SDA and SCL pins are connected to the same Arduino pins. Since the devices have different addresses, there is no conflict (OLED `0x3C`, DS3231 `0x68`).
 
 | Arduino Uno | OLED | RTC (DS3231) |
-|-------------|------|--------------|
+|---|---|---|
 | 5V | VCC | VCC |
 | GND | GND | GND |
 | A4 (SDA) | SDA | SDA |
 | A5 (SCL) | SCL | SCL |
 
-Notlar:
-- Uno R3 kartlarda SDA ve SCL pinleri AREF'in yanında da ayrıca çıkar. A4/A5 ile aynı hattır, hangisini kullanırsan kullan.
-- Bazı OLED modüller 3.3V ister. Çoğu 3.3V-5V arası çalışır, ama emin değilsen modülün üstündeki yazıya bak.
-- Breadboard kullanırsan 5V ve GND'yi güç raylarına alıp ikisini oradan beslemek işi kolaylaştırır.
+Notes:
+- On Uno R3 boards, SDA and SCL pins are also available next to AREF. They share the same connections as A4/A5, so either set can be used.
+- Some OLED modules require 3.3V. Most operate between 3.3V and 5V, but check the markings on the module if you are unsure.
+- If you use a breadboard, connecting 5V and GND to the power rails makes supplying power to both modules easier.
 
-```
-        Arduino Uno
-      +-------------+
-      |          5V |-----+--------+
-      |         GND |--+--|--------|--+
-      |          A4 |--|--|--+-----|--|--+
-      |          A5 |--|--|--|--+--|--|--|--+
-      +-------------+  |  |  |  |  |  |  |  |
-                       |  |  |  |  |  |  |  |
-                     GND VCC SDA SCL VCC GND SDA SCL
-                      [  OLED     ]  [   RTC    ]
-```
+## Libraries
 
-## Kütüphaneler
-
-Arduino IDE içinde **Sketch > Include Library > Manage Libraries** menüsünden şunları kur:
+Install the following libraries through **Sketch > Include Library > Manage Libraries** in the Arduino IDE:
 
 1. **Adafruit SSD1306**
-2. **Adafruit GFX Library** (SSD1306 ile birlikte kurulması istenir, onayla)
+2. **Adafruit GFX Library** (the IDE will ask you to install this along with SSD1306; confirm the installation)
 3. **RTClib** (Adafruit)
 
-## Kod
+## Code
 
 ```cpp
 /*
   Arduino Uno + SSD1306 OLED (I2C) + DS3231 RTC
-  Solda donen disli animasyonu, sagda saat / gun / tarih.
+  Rotating gear animation on the left, time / day / date on the right.
 */
 
 #include <Wire.h>
@@ -62,17 +49,17 @@ Arduino IDE içinde **Sketch > Include Library > Manage Libraries** menüsünden
 #include <Adafruit_SSD1306.h>
 #include <RTClib.h>
 
-// ---------------- Ayarlar ----------------
+// ---------------- Settings ----------------
 #define SCREEN_WIDTH 128
-#define SCREEN_HEIGHT 64      // 128x32 ekran kullaniyorsan 32 yap
+#define SCREEN_HEIGHT 64      // Set to 32 if you are using a 128x32 display
 #define OLED_RESET   -1
-#define OLED_ADDR    0x3C     // calismazsa 0x3D dene
+#define OLED_ADDR    0x3C     // Try 0x3D if it does not work
 
-#define USE_BITMAP_ANIM 0     // 1 yaparsan frames.h icindeki kendi animasyonun calisir
-#define SET_TIME_NOW    0     // 1 yapip yuklersen RTC'yi derleme saatine ayarlar (sonra tekrar 0 yap!)
-#define FRAME_DELAY_MS  60    // animasyon hizi (kucuk = hizli)
+#define USE_BITMAP_ANIM 0     // Set to 1 to use your custom animation in frames.h
+#define SET_TIME_NOW    0     // Set to 1 and upload to adjust the RTC to the compilation time (then set it back to 0!)
+#define FRAME_DELAY_MS  60    // Animation speed (smaller = faster)
 
-// Animasyonun cizilecegi alanin merkezi (solda)
+// Center of the animation area (left side)
 #define ANIM_CX 20
 #define ANIM_CY 32
 
@@ -81,16 +68,16 @@ Arduino IDE içinde **Sketch > Include Library > Manage Libraries** menüsünden
 #endif
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-RTC_DS3231 rtc;                       // DS1307 kullaniyorsan: RTC_DS1307 rtc;
+RTC_DS3231 rtc;                       // If using DS1307: RTC_DS1307 rtc;
 
-// Turkce karakter yok, bu yuzden ASCII kisaltmalar (0 = Pazar)
-const char* gunler[] = {"PAZAR", "PZTESI", "SALI", "CARSAMBA", "PERSEMBE", "CUMA", "CMTESI"};
+// No Turkish characters, so ASCII abbreviations are used (0 = Sunday)
+const char* gunler[] = {"SUNDAY", "MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY", "SATURDAY"};
 
 unsigned long sonKare = 0;
 uint8_t kareNo = 0;
 float aci = 0;
 
-// ---------------- Prosedurel animasyon: donen disli ----------------
+// ---------------- Procedural animation: rotating gear ----------------
 void drawGear(int cx, int cy, float angle) {
   const int dis = 8;
   const int rIc = 12;
@@ -109,14 +96,14 @@ void drawGear(int cx, int cy, float angle) {
     int y3 = cy + sin(a) * rDis;
     display.fillTriangle(x1, y1, x2, y2, x3, y3, SSD1306_WHITE);
 
-    // ic spoklar (donusu daha belirgin gosterir)
+    // Inner spokes (make the rotation more visible)
     if (i % 2 == 0) {
       display.drawLine(cx, cy, cx + cos(a) * (rIc - 2), cy + sin(a) * (rIc - 2), SSD1306_WHITE);
     }
   }
 }
 
-// ---------------- Bitmap animasyon ----------------
+// ---------------- Bitmap animation ----------------
 #if USE_BITMAP_ANIM
 void drawBitmapAnim(uint8_t frame) {
   const uint8_t* ptr = (const uint8_t*)pgm_read_ptr(&frames[frame]);
@@ -124,33 +111,33 @@ void drawBitmapAnim(uint8_t frame) {
 }
 #endif
 
-// ---------------- Yardimci: 2 haneli yazdir ----------------
+// ---------------- Helper: print two digits ----------------
 void print2(int v) {
   if (v < 10) display.print('0');
   display.print(v);
 }
 
-// ---------------- Saat ve tarih ----------------
+// ---------------- Clock and date ----------------
 void drawClock(const DateTime& now) {
-  // Gun adi
+  // Day name
   display.setTextSize(1);
   display.setCursor(46, 4);
   display.print(gunler[now.dayOfTheWeek()]);
 
-  // Saat:Dakika (buyuk)
+  // Hour:Minute (large)
   display.setTextSize(2);
   display.setCursor(46, 20);
   print2(now.hour());
-  // Iki nokta saniyede bir yanip soner
+  // The colon blinks once per second
   display.print((now.second() % 2 == 0) ? ':' : ' ');
   print2(now.minute());
 
-  // Saniye (kucuk)
+  // Seconds (small)
   display.setTextSize(1);
   display.setCursor(108, 27);
   print2(now.second());
 
-  // Tarih
+  // Date
   display.setCursor(46, 46);
   print2(now.day());
   display.print('.');
@@ -163,7 +150,7 @@ void setup() {
   Serial.begin(9600);
 
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
-    Serial.println(F("OLED bulunamadi! Baglantilari ve adresi kontrol et."));
+    Serial.println(F("OLED not found! Check the connections and address."));
     while (true);
   }
 
@@ -172,8 +159,8 @@ void setup() {
     display.setTextSize(1);
     display.setTextColor(SSD1306_WHITE);
     display.setCursor(0, 0);
-    display.println(F("RTC bulunamadi!"));
-    display.println(F("Baglantilari kontrol et"));
+    display.println(F("RTC not found!"));
+    display.println(F("Check the connections"));
     display.display();
     while (true);
   }
@@ -182,7 +169,7 @@ void setup() {
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
 #else
   if (rtc.lostPower()) {
-    // Pil takili degilse veya bittiyse saati derleme aniyla baslat
+    // If the battery is not installed or is depleted, initialize the clock using the compilation time
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   }
 #endif
@@ -208,7 +195,7 @@ void loop() {
   if (aci > 2 * PI) aci -= 2 * PI;
 #endif
 
-  // Animasyon ile saat arasina ince cizgi
+  // Thin line between the animation and the clock
   display.drawFastVLine(41, 4, SCREEN_HEIGHT - 8, SSD1306_WHITE);
 
   drawClock(now);
@@ -216,40 +203,42 @@ void loop() {
 }
 ```
 
-## Saati ayarlama
+## Setting the Time
 
-RTC'nin saati ilk kurulumda yanlış olabilir.
+The RTC may display an incorrect time during the initial setup.
 
-1. Kodda `#define SET_TIME_NOW 1` yap ve yükle. RTC, derleme anındaki bilgisayar saatine ayarlanır.
-2. Saatin doğru olduğunu gördükten sonra `#define SET_TIME_NOW 0` yap ve tekrar yükle. Aksi halde Arduino her resetlendiğinde saat derleme anına geri döner.
+1. Set `#define SET_TIME_NOW 1` in the code and upload it. The RTC will be adjusted to the computer's compilation time.
+2. After confirming that the time is correct, set `#define SET_TIME_NOW 0` and upload the code again. Otherwise, the clock will revert to the compilation time every time the Arduino is reset.
 
-Derleme ile yükleme arasında birkaç saniye fark olacağı için saat biraz geride kalabilir. Daha hassas ayar için yükleme tamamlanır tamamlanmaz hızlıca reset atabilir veya `rtc.adjust(DateTime(2026, 11, 6, 14, 30, 0));` şeklinde elle yazabilirsin.
+Since there may be a difference of a few seconds between compilation and uploading, the clock may run slightly behind. For a more precise adjustment, you can quickly reset the board immediately after uploading is completed, or manually enter the time as follows:
 
-## Kendi animasyonunu ekleme
+`rtc.adjust(DateTime(2026, 11, 6, 14, 30, 0));`
 
-Ekran 1 bit (siyah-beyaz) olduğu için animasyon, sırayla gösterilen birkaç siyah-beyaz küçük resimden (kare) oluşur. Tıpkı flipbook gibi.
+## Adding Your Own Animation
 
-### 1) Kareleri hazırla
+Since the display is 1-bit (black and white), the animation consists of several small black-and-white images (frames) displayed sequentially. It works just like a flipbook.
 
-- Önerilen boyut: **32x32 piksel** (ekranın solundaki alana sığar, en fazla yaklaşık 40x56'ya kadar çıkabilirsin).
-- Her kare ayrı bir görsel olmalı: `kare0.png`, `kare1.png`, `kare2.png` ... Kare sayısı 4 ile 12 arası idealdir.
-- Siyah-beyaz çiz. Piksel sanat için [Piskel](https://www.piskelapp.com/) çok uygun. 32x32 tuval açıp kareleri çiz, sonra PNG olarak her kareyi ayrı dışa aktar. GIF'in kareleri de olur.
+### 1) Prepare the Frames
 
-### 2) Kareleri koda çevir
+- Recommended dimensions: **32x32 pixels** (fits in the area on the left side of the display; you can increase it to approximately 40x56 at most).
+- Each frame should be a separate image: `frame0.png`, `frame1.png`, `frame2.png` ... A total of 4 to 12 frames is ideal.
+- Draw in black and white. [Piskel](https://www.piskelapp.com/) is very suitable for pixel art. Create a 32x32 canvas, draw the frames, and export each one separately as a PNG. Frames from a GIF can also be used.
 
-1. [image2cpp](https://javl.github.io/image2cpp/) sitesini aç.
-2. Tüm kare PNG'lerini aynı anda yükle.
-3. Ayarlar:
-   - **Canvas size:** 32 x 32 (kendi boyutun)
+### 2) Convert the Frames into Code
+
+1. Open the [image2cpp](https://javl.github.io/image2cpp/) website.
+2. Upload all frame PNG files at the same time.
+3. Use the following settings:
+   - **Canvas size:** 32 x 32 (or your custom dimensions)
    - **Background color:** Black
-   - **Invert image colors:** Çıktı ters görünürse işaretle
+   - **Invert image colors:** Enable this if the output appears inverted
    - **Code output format:** Arduino code
    - **Draw mode:** Horizontal – 1 bit per pixel
-4. **Generate code** de. Her kare için bir dizi üretilir.
+4. Click **Generate code**. An array will be generated for each frame.
 
-### 3) `frames.h` dosyasını oluştur
+### 3) Create the `frames.h` File
 
-Arduino IDE'de `.ino` dosyasının yanına yeni sekme aç (sağ üstteki ok > New Tab), adını `frames.h` yap ve image2cpp çıktısını şu düzene sok:
+In the Arduino IDE, open a new tab next to the `.ino` file (top-right arrow > New Tab), name it `frames.h`, and arrange the image2cpp output in the following format:
 
 ```cpp
 #ifndef FRAMES_H
@@ -259,10 +248,10 @@ Arduino IDE'de `.ino` dosyasının yanına yeni sekme aç (sağ üstteki ok > Ne
 
 #define FRAME_W 32
 #define FRAME_H 32
-#define FRAME_COUNT 4          // kare sayin
+#define FRAME_COUNT 4          // Number of frames
 
 const unsigned char frame0[] PROGMEM = {
-  // image2cpp'den gelen 128 bayt (32x32 icin)
+  // 128 bytes generated by image2cpp (for 32x32)
 };
 const unsigned char frame1[] PROGMEM = {
   // ...
@@ -281,42 +270,38 @@ const unsigned char* const frames[] PROGMEM = {
 #endif
 ```
 
-### 4) Ana kodda aç
+### 4) Enable It in the Main Code
 
-Ana koddaki satırı değiştir:
+Change the following line in the main code:
 
 ```cpp
 #define USE_BITMAP_ANIM 1
 ```
 
-Hız için `FRAME_DELAY_MS` değerini ayarla. Bitmap animasyonlarda genelde 100-150 ms güzel görünür.
+Adjust the `FRAME_DELAY_MS` value to control the speed. For bitmap animations, 100–150 ms generally provides a good result.
 
-### Bellek hakkında
+### Memory Considerations
 
-Uno'nun SRAM'i 2 KB, ekran tamponu tek başına 1 KB yer kaplar. Kareler `PROGMEM` ile flash belleğe konduğu için SRAM'i yemez. 32x32 bir kare 128 bayttır, 12 kare yaklaşık 1.5 KB flash demektir, sorun olmaz. Kare boyutunu 64x64'e çıkarırsan kare başına 512 bayt olur, flash'ta yine rahat sığar ama ekranın yarısını kaplar.
+The Arduino Uno has 2 KB of SRAM, and the display buffer alone occupies 1 KB. Since the frames are stored in flash memory using `PROGMEM`, they do not consume SRAM. A 32x32 frame requires 128 bytes, so 12 frames require approximately 1.5 KB of flash memory, which is not a problem. If you increase the frame size to 64x64, each frame will require 512 bytes. This will still fit comfortably in flash memory, but it will occupy half of the display.
 
-### Küçük ipuçları
+### Small Tips
 
-- Animasyonu ekranın başka bir yerine koymak için `ANIM_CX` ve `ANIM_CY` değerlerini değiştir.
-- Daha akıcı görünmesi için kareler arası farkı küçük tut.
-- Prosedürel (kodla çizilen) animasyonlar bellekten tasarruf eder. `drawGear` fonksiyonunu örnek alıp kendi şeklini (pervane, kalp atışı, orbit eden noktalar) yazabilirsin.
+- To move the animation to another area of the display, change the `ANIM_CX` and `ANIM_CY` values.
+- For smoother animation, keep the differences between consecutive frames small.
+- Procedural animations (drawn using code) save memory. You can use the `drawGear` function as an example and write your own shape, such as a propeller, heartbeat, or orbiting dots.
 
-## Sorun giderme
+## Troubleshooting
 
-| Sorun | Çözüm |
-|-------|-------|
-| Ekran hiç yanmıyor | VCC/GND ters olabilir. SDA-SCL yerlerini kontrol et. `OLED_ADDR` değerini `0x3D` yap. |
-| "OLED bulunamadi" yazıyor (Seri Monitör) | Adres yanlış veya kablo gevşek. I2C tarayıcı (I2C scanner) sketch'i ile adresi bul. |
-| "RTC bulunamadi" yazıyor | RTC'nin SDA/SCL bağlantısını kontrol et. DS1307 kullanıyorsan koddaki `RTC_DS3231` yerine `RTC_DS1307` yaz. |
-| Saat her resette sıfırlanıyor | `SET_TIME_NOW` hâlâ 1 olabilir veya pil takılı/dolu değildir. |
-| Ekran ters veya kaymış | 128x32 ekransan `SCREEN_HEIGHT` değerini 32 yap. Bazı 1.3" ekranlar SH1106 sürücülüdür, Adafruit SH110X kütüphanesi gerekir. |
-| Animasyon negatif görünüyor | image2cpp'de **Invert image colors** seçeneğini değiştir. |
-| Gün adı yanlış | RTC tarihini tekrar ayarla. Gün adı tarihten hesaplanır. |
+| Problem | Solution |
+|---|---|
+| The display does not turn on at all | VCC/GND may be reversed. Check the SDA-SCL connections. Set `OLED_ADDR` to `0x3D`. |
+| "OLED not found" appears (Serial Monitor) | The address may be incorrect or a wire may be loose. Find the address using an I2C scanner sketch. |
+| "RTC not found" appears | Check the RTC's SDA/SCL connections. If you are using DS1307, replace `RTC_DS3231` with `RTC_DS1307` in the code. |
+| The clock resets every time the board is restarted | `SET_TIME_NOW` may still be set to 1, or the battery may be missing/depleted. |
+| The display is inverted or shifted | If you are using a 128x32 display, set `SCREEN_HEIGHT` to 32. Some 1.3" displays use the SH1106 driver and require the Adafruit SH110X library. |
+| The animation appears negative | Change the **Invert image colors** option in image2cpp. |
+| The day name is incorrect | Set the RTC date again. The day name is calculated from the date. |
 
-## DS1307 notu
+## DS1307 Note
 
-DS1307, DS3231 kadar hassas değildir (ayda dakikalar kayabilir) ve 5V ister. Kodda sadece `RTC_DS3231 rtc;` satırını `RTC_DS1307 rtc;` olarak değiştirmen yeterli. DS1307'de `lostPower()` yerine `!rtc.isrunning()` kullanılır.
-
-## Lisans
-
-MIT
+The DS1307 is not as accurate as the DS3231 (it can drift by several minutes per month) and requires 5V. In the code, simply change the line `RTC_DS3231 rtc;` to `RTC_DS1307 rtc;`. With the DS1307, use `!rtc.isrunning()` instead of `lostPower()`.
